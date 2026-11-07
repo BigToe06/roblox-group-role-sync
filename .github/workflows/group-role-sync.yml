@@ -1,0 +1,57 @@
+name: Group role sync
+
+# Polls the Roblox community and gives new members the "Players" role.
+# Roblox has no group-joined webhook, so this runs on a schedule.
+on:
+  schedule:
+    # Every 10 minutes, offset from :00 (GitHub delays jobs at the top of the hour).
+    - cron: "4-59/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (log only, change nothing)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: group-role-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: role-sync-state-${{ github.run_id }}
+          restore-keys: role-sync-state-
+
+      - name: Run sync
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          GROUP_ID: ${{ vars.GROUP_ID || '438861227' }}
+          PLAYERS_ROLE_ID: ${{ vars.PLAYERS_ROLE_ID || '906684075' }}
+          PROTECTED_ROLE_IDS: ${{ vars.PROTECTED_ROLE_IDS || '906704097,906422107' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.DRY_RUN || 'false' }}
+          MODE: once
+          STATE_FILE: state/state.json
+        run: node src/index.mjs
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: role-sync-state-${{ github.run_id }}
