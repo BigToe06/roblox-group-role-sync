@@ -1,0 +1,13 @@
+{
+  "name": "roblox-group-role-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gives new Roblox community members the Players role via Open Cloud (polling; no dependencies).",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "loop": "MODE=loop node src/index.mjs",
+    "test": "node --test test/sync.test.mjs"
+  }
+}
